@@ -1,6 +1,7 @@
 from doctr.io import DocumentFile
 from doctr.models import ocr_predictor
 import re
+from fastapi import FastAPI
 
 model= ocr_predictor(pretrained=True)
 
@@ -36,3 +37,10 @@ def extractpdf():
 
 
 extractpdf()
+
+chemin_pdf= "pdf/document.pdf"
+app = FastAPI()
+
+@app.post("/parse")
+def parse_endpoint(chemin_pdf: str):
+    return extractpdf(chemin_pdf)
