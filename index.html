@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Interface Client - IA Documentaire</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background-color: #f4f4f9; }
+        .card { background: white; padding: 20px; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        button { padding: 10px 15px; background: #007BFF; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        pre { background: #333; color: #fff; padding: 10px; border-radius: 4px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+
+    <h1>Gestion Multimodale de Documents (Interface Client)</h1>
+
+    <div class="card">
+        <h3>1. Ingestion de Document (Multipart)</h3>
+        <input type="file" id="fileInput" accept=".pdf, .png, .jpg, .txt">
+        <button onclick="uploadDocument()">Ingérer le document</button>
+        <pre id="uploadResult">En attente...</pre>
+    </div>
+
+    <div class="card">
+        <h3>2. Entraînement & Recommandation</h3>
+        <button onclick="callApi('/fit', 'POST')">Lancer l'apprentissage (/fit)</button>
+        <button onclick="callApi('/recommend', 'POST')">Recommander (/recommend)</button>
+        <pre id="mlResult">En attente...</pre>
+    </div>
+
+    <div class="card">
+        <h3>3. Évaluation & Métriques</h3>
+        <button onclick="callApi('/metrics/ocr', 'POST')">Évaluer OCR</button>
+        <button onclick="callApi('/metrics/classification', 'POST')">Évaluer Classification</button>
+        <button onclick="callApi('/metrics/environment', 'POST')">Estimer Coût Environnemental</button>
+        <pre id="metricsResult">En attente...</pre>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8080';
+
+        // Fonction pour simuler ou envoyer le fichier (multipart)
+        async function uploadDocument() {
+            const fileInput = document.getElementById('fileInput');
+            const resultBox = document.getElementById('uploadResult');
+            
+            if (!fileInput.files[0]) {
+                resultBox.innerText = "Veuillez sélectionner un fichier.";
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append("file", fileInput.files[0]);
+
+            try {
+                // Remplacer '/parse' par l'endpoint réel d'ingestion de la Gateway
+                const response = await fetch(`${API_BASE}/parse`, {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+                resultBox.innerText = JSON.stringify(data, null, 2);
+            } catch (error) {
+                resultBox.innerText = `[Mock] Échec connexion Backend. \nSimulation de succès pour: ${fileInput.files[0].name}\nStatut: PENDING -> RUNNING -> DONE`;
+            }
+        }
+
+        // Fonction générique pour les endpoints JSON (fit, recommend, metrics)
+        async function callApi(endpoint, method) {
+            const resultBoxes = {
+                '/fit': 'mlResult', '/recommend': 'mlResult',
+                '/metrics/ocr': 'metricsResult', '/metrics/classification': 'metricsResult', '/metrics/environment': 'metricsResult'
+            };
+            const targetBox = document.getElementById(resultBoxes[endpoint]);
+            targetBox.innerText = "Chargement...";
+
+            try {
+                const response = await fetch(`${API_BASE}${endpoint}`, { method: method });
+                const data = await response.json();
+                targetBox.innerText = JSON.stringify(data, null, 2);
+            } catch (error) {
+                // Mock response pour le prototypage
+                targetBox.innerText = `[Mock] L'API ${API_BASE}${endpoint} n'est pas joignable.\nSimulation de réponse :\n{\n  "status": "success",\n  "endpoint": "${endpoint}",\n  "message": "Action exécutée avec succès sur l'orchestrateur."\n}`;
+            }
+        }
+    </script>
+</body>
+</html>
